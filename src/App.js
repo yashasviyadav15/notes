@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -8,7 +8,8 @@ const schema = yup.object().shape({
     yup.object().shape({
       companyName: yup.string().required(),
       fromDate: yup.date().required(),
-      toDate: yup.date().required()
+      toDate: yup.date().required(),
+      currentlyWorking: yup.boolean()
     })
   ),
   educationDetails: yup.array().of(
@@ -16,7 +17,8 @@ const schema = yup.object().shape({
       schoolName: yup.string().required(),
       courseName: yup.string().required(),
       fromDate: yup.date().required(),
-      toDate: yup.date().required()
+      toDate: yup.date().required(),
+      currentlyStudying: yup.boolean()
     })
   )
 });
@@ -27,6 +29,7 @@ const validateNoOverlap = (details) => {
       if (
         (details[i].fromDate <= details[j].toDate && details[i].toDate >= details[j].fromDate)
       ) {
+        alert("yay")
         return false;
       }
     }
@@ -35,7 +38,7 @@ const validateNoOverlap = (details) => {
 };
 
 const ProfileForm = () => {
-  const { control, handleSubmit, watch, setError, clearErrors } = useForm({
+  const { control, handleSubmit, watch, setValue, setError, clearErrors } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       workDetails: [],
@@ -53,8 +56,26 @@ const ProfileForm = () => {
     name: 'educationDetails'
   });
 
+  const watchWorkDetails = watch('workDetails');
+  const watchEducationDetails = watch('educationDetails');
+
+  useEffect(() => {
+    watchWorkDetails.forEach((work, index) => {
+      if (work.currentlyWorking) {
+        setValue(`workDetails[${index}].toDate`, new Date().toISOString().split('T')[0]);
+      }
+    });
+  }, [watchWorkDetails, setValue]);
+
+  useEffect(() => {
+    watchEducationDetails.forEach((education, index) => {
+      if (education.currentlyStudying) {
+        setValue(`educationDetails[${index}].toDate`, new Date().toISOString().split('T')[0]);
+      }
+    });
+  }, [watchEducationDetails, setValue]);
+
   const onSubmit = (data) => {
-    console.log("entered")
     const workDetails = data.workDetails;
     const educationDetails = data.educationDetails;
 
@@ -62,11 +83,16 @@ const ProfileForm = () => {
 
     if (!validateNoOverlap(allDetails)) {
       setError("workDetails", { type: "manual", message: "Date ranges overlap" });
-      alert("details should not overlap")
+      console.log("run")
       return;
     }
+
+    // Handle valid data submission
     console.log(data);
   };
+
+  const currentlyWorkingChecked = watchWorkDetails.some(work => work.currentlyWorking);
+  const currentlyStudyingChecked = watchEducationDetails.some(edu => edu.currentlyStudying);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -86,12 +112,28 @@ const ProfileForm = () => {
           <Controller
             name={`workDetails[${index}].toDate`}
             control={control}
-            render={({ field }) => <input type="date" {...field} placeholder="To Date" />}
+            render={({ field }) => <input type="date" {...field} placeholder="To Date" disabled={field.value === new Date().toISOString().split('T')[0]} />}
           />
+          <Controller
+            name={`workDetails[${index}].currentlyWorking`}
+            control={control}
+            render={({ field }) => (
+              <input
+                type="checkbox"
+                {...field}
+                disabled={currentlyWorkingChecked && !field.value}
+              />
+            )}
+          />
+          <label>Currently Working</label>
           <button type="button" onClick={() => removeWork(index)}>Remove</button>
         </div>
       ))}
-      <button type="button" onClick={() => appendWork({ companyName: "", fromDate: "", toDate: "" })}>
+      <button
+        type="button"
+        onClick={() => appendWork({ companyName: "", fromDate: "", toDate: "", currentlyWorking: false })}
+        disabled={currentlyWorkingChecked}
+      >
         Add Work Detail
       </button>
 
@@ -116,12 +158,28 @@ const ProfileForm = () => {
           <Controller
             name={`educationDetails[${index}].toDate`}
             control={control}
-            render={({ field }) => <input type="date" {...field} placeholder="To Date" />}
+            render={({ field }) => <input type="date" {...field} placeholder="To Date" disabled={field.value === new Date().toISOString().split('T')[0]} />}
           />
+          <Controller
+            name={`educationDetails[${index}].currentlyStudying`}
+            control={control}
+            render={({ field }) => (
+              <input
+                type="checkbox"
+                {...field}
+                disabled={currentlyStudyingChecked && !field.value}
+              />
+            )}
+          />
+          <label>Currently Studying</label>
           <button type="button" onClick={() => removeEducation(index)}>Remove</button>
         </div>
       ))}
-      <button type="button" onClick={() => appendEducation({ schoolName: "", courseName: "", fromDate: "", toDate: "" })}>
+      <button
+        type="button"
+        onClick={() => appendEducation({ schoolName: "", courseName: "", fromDate: "", toDate: "", currentlyStudying: false })}
+        disabled={currentlyStudyingChecked}
+      >
         Add Education Detail
       </button>
 
