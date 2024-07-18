@@ -29,25 +29,25 @@ const validateNoOverlap = (details) => {
       if (
         (details[i].fromDate <= details[j].toDate && details[i].toDate >= details[j].fromDate)
       ) {
-        alert("yay")
+        alert("Date ranges overlap");
         return false;
       }
     }
   }
   return true;
-}; 
+};
+
 const formatDate = (date) => new Date(date).toISOString().split('T')[0];
 
 const ProfileForm = () => {
-  
-
-  const { control, handleSubmit, watch, setValue, setError, clearErrors,reset } = useForm({
+  const { control, handleSubmit, watch, setValue, setError, clearErrors, reset, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      workDetails: [{companyName:"",fromDate:"",toDate:""}],
-      educationDetails: [{schoolName:"",courseName:"",fromDate:"",toDate:""}]
+      workDetails: [{ companyName: "", fromDate: "", toDate: "", currentlyWorking: false }],
+      educationDetails: [{ schoolName: "", courseName: "", fromDate: "", toDate: "", currentlyStudying: false }]
     }
   });
+
   const { fields: workFields, append: appendWork, remove: removeWork } = useFieldArray({
     control,
     name: 'workDetails'
@@ -57,6 +57,7 @@ const ProfileForm = () => {
     control,
     name: 'educationDetails'
   });
+
   useEffect(() => {
     const workData = [
       {
@@ -100,58 +101,7 @@ const ProfileForm = () => {
         currentlyStudying: false
       }))
     });
-  }, []);
-//   useEffect(() => {
-//     const workData = [
-//       {
-//           "toDate": "2024-07-15T18:30:00.000Z",
-//           "fromDate": "2024-07-15T18:30:00.000Z",
-//           "companyName": "yeah"
-//       },
-//       {
-//         "toDate": "2018-07-15T18:30:00.000Z",
-//         "fromDate": "2019-07-15T18:30:00.000Z",
-//         "companyName": "nope"
-//     }
-//   ];
-//     if (workData?.length > 0) {
-//       reset({
-//         workDetails: workData?.map((workData) => ({
-//           companyName: workData?.companyName,
-//         })),
-//       });
-//       workData?.forEach((link, index) => {
-//         setValue(`workDetails[${index}].companyName`, link?.companyName);
-//       });
-//     }
-//   }, []);
-// useEffect(()=>{
-//  const eduData = [
-//       {
-//           "toDate": "2023-02-13T18:30:00.000Z",
-//           "fromDate": "2023-01-16T18:30:00.000Z",
-//           "courseName": "sd",
-//           "schoolName": "yashu"
-//       },
-//       {
-//         "toDate": "2021-02-13T18:30:00.000Z",
-//         "fromDate": "2022-01-16T18:30:00.000Z",
-//         "courseName": "lol",
-//         "schoolName": "mack"
-//     },
-//   ];
-//     if (eduData?.length > 0) {
-//       reset({
-//         educationDetails: eduData?.map((eduData) => ({
-//           schoolName: eduData?.schoolName,
-//           courseName:eduData?.courseName
-//         })),
-//       });
-//       eduData?.forEach((link, index) => {
-//         // setValue(`links[${index}].linkUrl`, link?.linkUrl);
-//       });
-//     }
-// },[])
+  }, [reset, setValue]);
 
   const watchWorkDetails = watch('workDetails');
   const watchEducationDetails = watch('educationDetails');
@@ -178,9 +128,34 @@ const ProfileForm = () => {
 
     const allDetails = [...workDetails, ...educationDetails];
 
+    let valid = true;
+
+    workDetails.forEach((work, index) => {
+      if (new Date(work.fromDate) > new Date(work.toDate)) {
+        setError(`workDetails.${index}.toDate`, {
+          type: "manual",
+          message: "To Date should be greater than From Date"
+        });
+        valid = false;
+      }
+    });
+
+    educationDetails.forEach((education, index) => {
+      if (new Date(education.fromDate) > new Date(education.toDate)) {
+        setError(`educationDetails.${index}.toDate`, {
+          type: "manual",
+          message: "To Date should be greater than From Date"
+        });
+        valid = false;
+      }
+    });
+
     if (!validateNoOverlap(allDetails)) {
       setError("workDetails", { type: "manual", message: "Date ranges overlap" });
-      console.log("run")
+      valid = false;
+    }
+
+    if (!valid) {
       return;
     }
 
@@ -209,7 +184,14 @@ const ProfileForm = () => {
           <Controller
             name={`workDetails[${index}].toDate`}
             control={control}
-            render={({ field }) => <input type="date" {...field} placeholder="To Date" disabled={field.value === new Date().toISOString().split('T')[0]} />}
+            render={({ field }) => (
+              <div>
+                <input type="date" {...field} placeholder="To Date" disabled={field.value === new Date().toISOString().split('T')[0]} />
+                {errors.workDetails?.[index]?.toDate && (
+                  <p>{errors.workDetails[index].toDate.message}</p>
+                )}
+              </div>
+            )}
           />
           <Controller
             name={`workDetails[${index}].currentlyWorking`}
@@ -255,7 +237,14 @@ const ProfileForm = () => {
           <Controller
             name={`educationDetails[${index}].toDate`}
             control={control}
-            render={({ field }) => <input type="date" {...field} placeholder="To Date" disabled={field.value === new Date().toISOString().split('T')[0]} />}
+            render={({ field }) => (
+              <div>
+                <input type="date" {...field} placeholder="To Date" disabled={field.value === new Date().toISOString().split('T')[0]} />
+                {errors.educationDetails?.[index]?.toDate && (
+                  <p>{errors.educationDetails[index].toDate.message}</p>
+                )}
+              </div>
+            )}
           />
           <Controller
             name={`educationDetails[${index}].currentlyStudying`}
