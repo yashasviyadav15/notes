@@ -35,17 +35,19 @@ const validateNoOverlap = (details) => {
     }
   }
   return true;
-};
+}; 
+const formatDate = (date) => new Date(date).toISOString().split('T')[0];
 
 const ProfileForm = () => {
-  const { control, handleSubmit, watch, setValue, setError, clearErrors } = useForm({
+  
+
+  const { control, handleSubmit, watch, setValue, setError, clearErrors,reset } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      workDetails: [],
-      educationDetails: []
+      workDetails: [{companyName:"",fromDate:"",toDate:""}],
+      educationDetails: [{schoolName:"",courseName:"",fromDate:"",toDate:""}]
     }
   });
-
   const { fields: workFields, append: appendWork, remove: removeWork } = useFieldArray({
     control,
     name: 'workDetails'
@@ -55,12 +57,107 @@ const ProfileForm = () => {
     control,
     name: 'educationDetails'
   });
+  useEffect(() => {
+    const workData = [
+      {
+        "toDate": "2024-07-15T18:30:00.000Z",
+        "fromDate": "2024-07-15T18:30:00.000Z",
+        "companyName": "yeah"
+      },
+      {
+        "toDate": "2018-07-15T18:30:00.000Z",
+        "fromDate": "2019-07-15T18:30:00.000Z",
+        "companyName": "nope"
+      }
+    ];
+    const eduData = [
+      {
+        "toDate": "2023-02-13T18:30:00.000Z",
+        "fromDate": "2023-01-16T18:30:00.000Z",
+        "courseName": "sd",
+        "schoolName": "yashu"
+      },
+      {
+        "toDate": "2021-02-13T18:30:00.000Z",
+        "fromDate": "2022-01-16T18:30:00.000Z",
+        "courseName": "lol",
+        "schoolName": "mack"
+      }
+    ];
+
+    reset({
+      workDetails: workData.map((work) => ({
+        companyName: work.companyName,
+        fromDate: formatDate(work.fromDate),
+        toDate: formatDate(work.toDate),
+        currentlyWorking: false
+      })),
+      educationDetails: eduData.map((edu) => ({
+        schoolName: edu.schoolName,
+        courseName: edu.courseName,
+        fromDate: formatDate(edu.fromDate),
+        toDate: formatDate(edu.toDate),
+        currentlyStudying: false
+      }))
+    });
+  }, []);
+//   useEffect(() => {
+//     const workData = [
+//       {
+//           "toDate": "2024-07-15T18:30:00.000Z",
+//           "fromDate": "2024-07-15T18:30:00.000Z",
+//           "companyName": "yeah"
+//       },
+//       {
+//         "toDate": "2018-07-15T18:30:00.000Z",
+//         "fromDate": "2019-07-15T18:30:00.000Z",
+//         "companyName": "nope"
+//     }
+//   ];
+//     if (workData?.length > 0) {
+//       reset({
+//         workDetails: workData?.map((workData) => ({
+//           companyName: workData?.companyName,
+//         })),
+//       });
+//       workData?.forEach((link, index) => {
+//         setValue(`workDetails[${index}].companyName`, link?.companyName);
+//       });
+//     }
+//   }, []);
+// useEffect(()=>{
+//  const eduData = [
+//       {
+//           "toDate": "2023-02-13T18:30:00.000Z",
+//           "fromDate": "2023-01-16T18:30:00.000Z",
+//           "courseName": "sd",
+//           "schoolName": "yashu"
+//       },
+//       {
+//         "toDate": "2021-02-13T18:30:00.000Z",
+//         "fromDate": "2022-01-16T18:30:00.000Z",
+//         "courseName": "lol",
+//         "schoolName": "mack"
+//     },
+//   ];
+//     if (eduData?.length > 0) {
+//       reset({
+//         educationDetails: eduData?.map((eduData) => ({
+//           schoolName: eduData?.schoolName,
+//           courseName:eduData?.courseName
+//         })),
+//       });
+//       eduData?.forEach((link, index) => {
+//         // setValue(`links[${index}].linkUrl`, link?.linkUrl);
+//       });
+//     }
+// },[])
 
   const watchWorkDetails = watch('workDetails');
   const watchEducationDetails = watch('educationDetails');
 
   useEffect(() => {
-    watchWorkDetails.forEach((work, index) => {
+    watchWorkDetails?.forEach((work, index) => {
       if (work.currentlyWorking) {
         setValue(`workDetails[${index}].toDate`, new Date().toISOString().split('T')[0]);
       }
@@ -68,7 +165,7 @@ const ProfileForm = () => {
   }, [watchWorkDetails, setValue]);
 
   useEffect(() => {
-    watchEducationDetails.forEach((education, index) => {
+    watchEducationDetails?.forEach((education, index) => {
       if (education.currentlyStudying) {
         setValue(`educationDetails[${index}].toDate`, new Date().toISOString().split('T')[0]);
       }
@@ -91,8 +188,8 @@ const ProfileForm = () => {
     console.log(data);
   };
 
-  const currentlyWorkingChecked = watchWorkDetails.some(work => work.currentlyWorking);
-  const currentlyStudyingChecked = watchEducationDetails.some(edu => edu.currentlyStudying);
+  const currentlyWorkingChecked = watchWorkDetails?.some(work => work.currentlyWorking);
+  const currentlyStudyingChecked = watchEducationDetails?.some(edu => edu.currentlyStudying);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
